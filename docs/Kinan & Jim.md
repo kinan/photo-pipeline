@@ -12,3 +12,5 @@ jpg ─▶▓▓▓▓▓▓▓─▶ txt
   .jpg ─▶▓▓▓▓▓▓▓▓▓▓▓─▶ .txt                                                                                             
           photo-pipe                                                                                                    
   ```
+  
+  https://huggingface.co/learn/smol-course/unit1/2

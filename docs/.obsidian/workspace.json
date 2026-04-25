@@ -97,16 +97,44 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Kinan & Jim.md",
+                "file": "Image SEO & Metadata Specification.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Kinan & Jim"
+              "title": "Image SEO & Metadata Specification"
+            }
+          },
+          {
+            "id": "d6d9fde7dcfd9507",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Intro to Vision Language Model.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Intro to Vision Language Model"
+            }
+          },
+          {
+            "id": "578acd6468ef99f9",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "V4 Style Similarity Search Design.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "V4 Style Similarity Search Design"
             }
           }
         ],
-        "currentTab": 6
+        "currentTab": 8
       }
     ],
     "direction": "vertical"
@@ -179,7 +207,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Kinan & Jim.md",
+                "file": "Draft.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,7 +217,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Kinan & Jim"
+              "title": "Backlinks for Draft"
             }
           },
           {
@@ -198,12 +226,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Kinan & Jim.md",
+                "file": "Draft.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Kinan & Jim"
+              "title": "Outgoing links from Draft"
             }
           },
           {
@@ -241,13 +269,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Kinan & Jim.md",
+                "file": "Draft.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Kinan & Jim"
+              "title": "Outline of Draft"
             }
           }
         ]
@@ -268,16 +296,19 @@
       "bases:Create new base": false
     }
   },
-  "active": "2d9f05ef77c1d3aa",
+  "active": "578acd6468ef99f9",
   "lastOpenFiles": [
-    "Intro to Vision Language Model.md",
-    "Qwen Fine Tunning.md",
-    "Kinan & Jim.md",
-    "Street Photography VLM Prompts.md",
-    "Image SEO & Metadata Specification.md",
+    "Supervised Fine-Tuning.md",
+    "V4 Style Similarity Search Design.md",
     "Prompts Experemntations.md",
+    "Draft.md",
+    "Intro to Vision Language Model.md",
+    "Indexing Documents with RAG.md",
+    "Image SEO & Metadata Specification.md",
+    "Kinan & Jim.md",
+    "Qwen Fine Tunning.md",
+    "Street Photography VLM Prompts.md",
     "Photo Pipeline.md",
-    "Tags.md",
     "seo-pipeline-strategy.md"
   ]
 }

@@ -56,3 +56,5 @@ Images contain a massive amount of raw data compared to a few sentences of text.
 
 ## Resources
 [Fine-Tuning Qwen2-VL-7B](https://huggingface.co/learn/cookbook/fine_tuning_vlm_trl)
+https://huggingface.co/learn/smol-course/unit1/2
+
