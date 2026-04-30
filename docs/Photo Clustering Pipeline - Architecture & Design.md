@@ -23,11 +23,10 @@ The V6 Hybrid is the recommended default for most use cases.
 | Component | Technology | Role |
 |---|---|---|
 | **Visual embeddings** | DINOv2-large (Facebook) | 1024-dim ViT CLS token — texture, grain, tonality |
-| **Aesthetic captions** | Qwen3-VL-2B-Instruct (Alibaba) | Generates 4-sentence style descriptions per photo |
-| **Text embeddings** | BGE-large-en-v1.5 (BAAI) | 1024-dim encoding of Qwen3 captions |
+| **Semantic embeddings** | Qwen3-VL-Embedding-2B (Alibaba) | Multimodal embedding model — images and text share the same vector space |
 | **Dimensionality reduction** | UMAP | Flattens high-dimensional embeddings for clustering and visualization |
 | **Clustering** | HDBSCAN (sklearn) | Density-based, no fixed K, auto-identifies outliers |
-| **Cache / database** | DuckDB | Embedded SQL store for embeddings, captions, cluster assignments |
+| **Cache / database** | DuckDB | Embedded SQL store for embeddings and cluster assignments |
 | **Inference backend** | PyTorch + MPS | Apple Silicon GPU via Metal Performance Shaders |
 | **Visualization** | Matplotlib + custom HTML | Scatter plot + interactive single-file HTML viewer |
 
@@ -45,17 +44,16 @@ graph TD
 
     subgraph Embedding Layer
         B[DINOv2-large\nViT CLS token — 1024-dim]
-        C[Qwen3-VL-2B-Instruct\n4-sentence aesthetic caption]
-        D[BGE-large-en-v1.5\nText → 1024-dim vector]
+        C[Qwen3-VL-Embedding-2B\nlast hidden state token]
     end
 
     subgraph Cache
         E[(DuckDB\nv6_visual)]
-        F[(DuckDB\nv6_aesthetic)]
+        F[(DuckDB\nv6_qwen)]
     end
 
     subgraph Fusion
-        G[Weighted Concatenation\n40% DINOv2 + 60% BGE]
+        G[Weighted Concatenation\n40% DINOv2 + 60% Qwen3-VL-Embedding]
     end
 
     subgraph Manifold Discovery
@@ -67,12 +65,11 @@ graph TD
         J[Matplotlib UMAP Scatter]
         K[Interactive HTML Explorer]
         L[(DuckDB v6_clusters)]
-        M[BGE Text Search]
+        M[Qwen3-VL-Embedding Text Search]
     end
 
     A --> B --> E
     A --> C --> F
-    F --> D --> F
     E --> G
     F --> G
     G --> H --> I
@@ -106,44 +103,44 @@ graph LR
 ```mermaid
 graph TD
     A[Raw Image] --> S1
-
-    subgraph S1 [Stage 1 · DINOv2 Visual]
-        B[DINOv2-large] --> C[CLS Token 1024-dim]
-        C --> D[L2 Normalize]
-        D --> E[(v6_visual\nDuckDB cache)]
-    end
-
     A --> S2
 
-    subgraph S2 [Stage 2 · Qwen3-VL Caption]
-        F[Qwen3-VL-2B-Instruct] --> G[4-sentence style description]
-        G --> H[(v6_aesthetic\nDuckDB cache)]
+    subgraph S1 [Stage 1 · DINOv2 Visual]
+        B[DINOv2-large\nViT CLS token] --> C[L2 Normalize\n1024-dim]
+        C --> D[(v6_visual\nDuckDB cache)]
     end
 
-    subgraph S3 [Stage 3 · BGE Text Embed]
-        H --> I[BGE-large-en-v1.5]
-        I --> J[Text vector 1024-dim]
-        J --> K[Update v6_aesthetic.text_emb]
+    subgraph S2 [Stage 2 · Qwen3-VL Semantic]
+        E[Qwen3-VL-Embedding-2B\nchat template + image] --> F[last_hidden_state of -1 token]
+        F --> G[L2 Normalize]
+        G --> H[(v6_qwen\nDuckDB cache)]
     end
 
-    subgraph S4 [Stage 4 · Hybrid Clustering]
-        E --> L[vis_matrix × 0.4]
-        K --> M[text_matrix × 0.6]
-        L --> N[np.hstack combined 2048-dim]
-        M --> N
-        N --> O[UMAP 2D\ncosine, n_neighbors=15\nmin_dist=0.0]
-        O --> P[HDBSCAN\nleaf, min_cluster_size=n÷10\nmin_samples=2]
-        O --> Q[vis_2d coords]
-        P --> R[cluster labels]
+    subgraph S3 [Stage 3 · Hybrid Clustering]
+        D --> I[vis_matrix × 0.4]
+        H --> J[qwen_matrix × 0.6]
+        I --> K[np.hstack combined]
+        J --> K
+        K --> L[UMAP 2D\ncosine, n_neighbors=15\nmin_dist=0.0]
+        L --> M[HDBSCAN\nleaf, min_cluster_size=n÷10\nmin_samples=2]
+        L --> N[vis_2d coords]
+        M --> O[cluster labels]
     end
 
     subgraph Output [Output]
-        Q --> T[Interactive HTML\nclusters_v6_interactive.html]
-        R --> T
-        Q --> U[Matplotlib Scatter]
-        R --> U
-        R --> V[(v6_clusters DuckDB)]
-        H --> W[BGE Text Search]
+        N --> P[Interactive HTML\nclusters_v6_interactive.html]
+        O --> P
+        N --> Q[Matplotlib Scatter]
+        O --> Q
+        O --> R[(v6_clusters DuckDB)]
+    end
+
+    subgraph TextSearch [Text Search]
+        S[Text Query] --> T[Qwen3-VL-Embedding-2B\ntext-only chat message]
+        T --> U[Query Vector]
+        H --> V[Cosine Similarity\nvs v6_qwen]
+        U --> V
+        V --> W[Ranked Results + UMAP Highlight]
     end
 ```
 
@@ -164,7 +161,7 @@ photo_id = sha256(file[:64KB])[:16]
 | `style_dinov2` | DINOv2-only pipeline embeddings | Never (append-only) |
 | `style_qwen3` | Qwen3-only pipeline embeddings | Never (append-only) |
 | `v6_visual` | V6 DINOv2 embeddings | Never (append-only) |
-| `v6_aesthetic` | V6 Qwen3 captions + BGE vectors | Never (append-only per photo) |
+| `v6_qwen` | V6 Qwen3-VL-Embedding vectors | Never (append-only) |
 | `v6_clusters` | Final cluster assignments | Recreated on each clustering run |
 
 ---
@@ -242,8 +239,8 @@ Photos labelled `-1` are not failures — they are **genuinely unique** photos w
 | `LIMIT` | setup cell | `'All'` | Set to an integer (e.g. `50`) to process a subset of photos. Useful for testing parameter changes without re-running full embedding. |
 | `EMBED_MODEL` | setup cell (DINOv2 notebook) | `'dinov2'` | Switch between `'dinov2'` (aesthetic) and `'qwen3'` (semantic) in the single-model pipeline. |
 | `VISUAL_WEIGHT` | setup cell (V6) | `0.4` | Weight given to DINOv2 embedding in concatenated vector. |
-| `TEXT_WEIGHT` | setup cell (V6) | `0.6` | Weight given to BGE text embedding. Must sum to 1.0 with `VISUAL_WEIGHT`. |
-| `CAPTION_MODEL` | setup cell (V6) | `'2b'` | `'2b'` runs entirely on MPS (~4 GB). `'8b'` requires int4 quantization and ~5 GB. |
+| `QWEN_WEIGHT` | setup cell (V6) | `0.6` | Weight given to Qwen3-VL-Embedding vector. Must sum to 1.0 with `VISUAL_WEIGHT`. |
+| `QWEN_EMB_MODEL` | setup cell (V6) | `models/Qwen3-VL-Embedding-2B` | Path to the Qwen3-VL-Embedding-2B model weights. |
 
 ### 5.2 UMAP Parameters
 
@@ -304,15 +301,15 @@ Getting too many noise points (label = -1)?
 
 ### 5.4 Blend Weight Tuning (V6 only)
 
-The `VISUAL_WEIGHT` / `TEXT_WEIGHT` ratio determines whether clusters are driven by **how the photo looks** or **what the photo depicts**.
+The `VISUAL_WEIGHT` / `QWEN_WEIGHT` ratio determines whether clusters are driven by **how the photo looks** or **what the photo depicts**.
 
-| Ratio (Visual / Text) | Resulting cluster character |
+| Ratio (Visual / Qwen) | Resulting cluster character |
 |---|---|
 | `0.4 / 0.6` (default) | Subject-aware with tonal sensitivity — portraits group together but also respect lighting |
 | `0.6 / 0.4` | Tone and texture dominate — a dark portrait clusters with dark architecture |
 | `0.2 / 0.8` | Strongly semantic — groups by scene type, nearly ignores visual texture |
 | `1.0 / 0.0` | Identical to DINOv2-only pipeline |
-| `0.0 / 1.0` | Identical to pure BGE text clustering |
+| `0.0 / 1.0` | Pure Qwen3-VL-Embedding clustering |
 
 After changing the weights, re-run from the **clustering cell** only — no need to re-embed.
 
@@ -325,7 +322,7 @@ Located in the **text_search cell**.
 | `QUERY` | `'solitary figure'` | Any natural language description of an aesthetic or subject |
 | `TOP_N` | `6` | Number of results returned |
 
-Query strings that work well with the BGE / Qwen3 aesthetic embedding space:
+Query strings that work well with the Qwen3-VL-Embedding space (images and text share the same space natively):
 - Lighting: `"harsh backlight silhouette"`, `"soft diffused window light"`, `"high contrast grain"`
 - Subject: `"solitary figure in crowd"`, `"portrait close up"`, `"empty street"`
 - Mood: `"melancholy isolation"`, `"documentary tension"`, `"quiet contemplation"`
@@ -364,7 +361,7 @@ HTML file
 
 ## 7. Memory Management on Apple Silicon
 
-All three models (DINOv2, Qwen3-VL, BGE) are loaded, used, and explicitly freed between stages. This is necessary because the M4 Pro's 24 GB unified memory is shared between CPU, GPU, and the OS.
+Both models (DINOv2, Qwen3-VL-Embedding) are loaded, used, and explicitly freed between stages. This is necessary because the M4 Pro's 24 GB unified memory is shared between CPU, GPU, and the OS.
 
 ```python
 del model
@@ -372,16 +369,15 @@ torch.mps.empty_cache()
 gc.collect()
 ```
 
-`PYTORCH_MPS_HIGH_WATERMARK_RATIO = "0.0"` forces the MPS driver to release memory immediately after each allocation rather than holding it speculatively. Without this, loading Qwen3-VL-2B after DINOv2 can trigger an out-of-memory crash.
+`PYTORCH_MPS_HIGH_WATERMARK_RATIO = "0.0"` forces the MPS driver to release memory immediately after each allocation rather than holding it speculatively. Without this, loading Qwen3-VL-Embedding-2B after DINOv2 can trigger an out-of-memory crash.
 
 **Stage memory footprint (V6):**
 
 | Stage | Peak MPS usage |
 |---|---|
 | Stage 1 — DINOv2-large | ~2.5 GB |
-| Stage 2 — Qwen3-VL-2B (bfloat16) | ~4.5 GB |
-| Stage 3 — BGE-large (float16) | ~1.5 GB |
-| Stage 4 — UMAP + HDBSCAN (CPU) | ~0.5 GB |
+| Stage 2 — Qwen3-VL-Embedding-2B (float16) | ~4.0 GB |
+| Stage 3 — UMAP + HDBSCAN (CPU) | ~0.5 GB |
 
 ---
 
@@ -400,9 +396,10 @@ Goal: Group by subject/scene type
 
 Goal: Group by subject AND respect style
   → similarity_search_v6.ipynb
-  → 40% DINOv2 + 60% BGE (via Qwen3 captions)
-  → Best results, requires all three model stages
-  → Tune VISUAL_WEIGHT / TEXT_WEIGHT to shift the balance
+  → 40% DINOv2 + 60% Qwen3-VL-Embedding (direct image vectors)
+  → Best results, requires two model stages only
+  → Tune VISUAL_WEIGHT / QWEN_WEIGHT to shift the balance
+  → Text search uses the same Qwen3-VL-Embedding model (no bridge needed)
 ```
 
 ---
@@ -412,6 +409,5 @@ Goal: Group by subject AND respect style
 - [DINOv2 — Learning Robust Visual Features without Supervision](https://dinov2.metademolab.com/)
 - [Understanding UMAP (interactive guide)](https://pair-code.github.io/understanding-umap/)
 - [HDBSCAN Parameter Selection](https://hdbscan.readthedocs.io/en/latest/parameter_selection.html)
-- [BGE Embedding Models (BAAI)](https://huggingface.co/BAAI/bge-large-en-v1.5)
 - [Qwen3-VL Technical Report](https://qwenlm.github.io/blog/qwen3-vl/)
 - [Curse of Dimensionality](https://en.wikipedia.org/wiki/Curse_of_dimensionality)
