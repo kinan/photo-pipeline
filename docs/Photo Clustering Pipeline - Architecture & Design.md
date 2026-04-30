@@ -10,9 +10,9 @@ The system enables a photographer to explore a large photo library by **visual s
 
 | Pipeline | Notebook | What groups together | Speed |
 |---|---|---|---|
-| **DINOv2** | `dinov2_clustering_pipeline.ipynb` | Same lighting, grain, tonal range, texture | ~15 img/s |
-| **Qwen3-VL** | `qwen3_vl_pipeline.ipynb` | Same subject or scene content | ~0.3 img/s |
-| **V6 Hybrid** | `similarity_search_v6.ipynb` | Subject + mood + style combined | ~0.3 img/s (Qwen3 gate) |
+| **DINOv2** | [dinov2_clustering_pipeline.ipynb](../dinov2_clustering_pipeline.ipynb) | Same lighting, grain, tonal range, texture | ~15 img/s |
+| **Qwen3-VL** | [qwen3_vl_pipeline.ipynb](../qwen3_vl_pipeline.ipynb) | Same subject or scene content | ~0.3 img/s |
+| **V6 Hybrid** | [similarity_search_v6.ipynb](../similarity_search_v6.ipynb) | Subject + mood + style combined | ~0.3 img/s (Qwen3 gate) |
 
 The V6 Hybrid is the recommended default for most use cases.
 
@@ -230,7 +230,7 @@ Photos labelled `-1` are not failures — they are **genuinely unique** photos w
 
 ---
 
-## 5. Parameter Tuning Reference
+## 5. Parameter Tuning Reference <a name="tuning"></a>
 
 ### 5.1 Global Config
 
